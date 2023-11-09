@@ -12,11 +12,14 @@ export class EventsController {
     private readonly repository: Repository<Event>
   ) {}
 
-  // private events: Event[] = [];
+  private readonly logger = new Logger(EventsController.name);
 
   @Get()
   async findAll() {
-    return await this.repository.find();
+    this.logger.log("Hit the findAll Route");
+    const events =  await this.repository.find();
+    this.logger.debug(`Found ${events.length} events`);
+    return events;
   }
 
   @Get('/practice')
