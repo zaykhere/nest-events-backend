@@ -38,10 +38,21 @@ export class EventsController {
     return event;
   }
 
+  @Get('/practice2')
+  async practice2() {
+    const event = await this.repository.findOne({
+      where: {
+        id: 1
+      },
+      relations: ['attendees']
+    })
+    return event;
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id) {
     const event = await this.repository.findOneBy({
-      id: id
+      id: id,
     })
 
     if(!event) {
