@@ -4,12 +4,17 @@ import { Event } from './event.entity';
 import { UpdateEventDto } from "./update-event-dto";
 import { Like, MoreThan, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
+import { Attendee } from "./attendee.entity";
+import { EventService } from "./events.service";
 
 @Controller('/events')
 export class EventsController {
   constructor(
     @InjectRepository(Event)
-    private readonly repository: Repository<Event>
+    private readonly repository: Repository<Event>,
+    @InjectRepository(Attendee)
+    private readonly attendeeRepository: Repository<Attendee>,
+    private readonly eventsService: EventService
   ) {}
 
   private readonly logger = new Logger(EventsController.name);
@@ -40,21 +45,29 @@ export class EventsController {
 
   @Get('/practice2')
   async practice2() {
-    const event = await this.repository.findOne({
-      where: {
-        id: 1
-      },
-      relations: ['attendees']
-    })
+    // const event = await this.repository.findOne({
+    //   where: {
+    //     id: 1
+    //   },
+    //   relations: ['attendees']
+    // })
+    // return event;
+
+    const event = new Event();
+    event.id = 1;
+
+    const attendee = new Attendee();
+    attendee.name = "Jerry The Second";
+    attendee.event = event;
+
+    await this.attendeeRepository.save(attendee);
+
     return event;
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id) {
-    const event = await this.repository.findOneBy({
-      id: id,
-    })
-
+    const event = await this.eventsService.getEvent(id);
     if(!event) {
       throw new NotFoundException();
     }
