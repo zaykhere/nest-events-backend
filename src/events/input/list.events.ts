@@ -7,5 +7,6 @@ export enum WhenEventFilter {
 };
 
 export class ListEvents {
-  when?: WhenEventFilter = WhenEventFilter.All
+  when?: WhenEventFilter = WhenEventFilter.All;
+  page: number = 1;
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, UsePipes, ValidationPipe } from "@nestjs/common";
 import { CreateEventDto } from './input/create-event-dto';
 import { Event } from './event.entity';
 import { UpdateEventDto } from "./input/update-event-dto";
@@ -21,10 +21,14 @@ export class EventsController {
   private readonly logger = new Logger(EventsController.name);
 
   @Get()
+  @UsePipes(new ValidationPipe({transform: true}))
   async findAll(@Query() filter: ListEvents) {
     this.logger.log("Hit the findAll Route");
-    const events =  await this.eventsService.getEventsWithAttendeeCountFiltered(filter);
-    this.logger.debug(`Found ${events.length} events`);
+    const events =  await this.eventsService.getEventsWithAttendeeCountFilteredPaginated(filter, {
+      total: true,
+      currentPage: filter.page,
+      limit: 2
+    });
     return events;
   }
 
