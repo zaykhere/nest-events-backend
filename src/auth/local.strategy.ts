@@ -6,14 +6,17 @@ import { User } from "./user.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 
 @Injectable()
-export class LocalStrategy extends PassportStrategy(Strategy) {
+export class LocalStrategy extends PassportStrategy(Strategy, "local") {
   private readonly logger = new Logger(LocalStrategy.name);
 
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>
   ) {
-    super();
+    super({
+      usernameField: "username",
+      passwordField: "password"
+    });
   }
 
   public async validate(username: string, password: string): Promise<any> {
@@ -26,9 +29,11 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    if(password !== user.password) {
+    if(password != user.password) {
       this.logger.debug(`Invalid credentials for user ${username}`);
       throw new UnauthorizedException();
     }
+
+    return user;
   }
 }
