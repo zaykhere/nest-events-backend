@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, UseGuards, Query, UsePipes, ValidationPipe } from "@nestjs/common";
 import { CreateEventDto } from './input/create-event-dto';
 import { Event } from './event.entity';
 import { UpdateEventDto } from "./input/update-event-dto";
@@ -7,6 +7,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Attendee } from "./attendee.entity";
 import { EventService } from "./events.service";
 import { ListEvents } from "./input/list.events";
+import { CurrentUser } from "src/auth/current-user.decorator";
+import { User } from "src/auth/user.entity";
+import { AuthGuardJwt } from "src/auth/auth-guard.jwt";
 
 @Controller('/events')
 export class EventsController {
@@ -81,11 +84,9 @@ export class EventsController {
   }
 
   @Post()
-  async create(@Body() input: CreateEventDto) {
-    return await this.repository.save({
-      ...input,
-      when: new Date(input.when)
-    })
+  @UseGuards(AuthGuardJwt)
+  async create(@Body() input: CreateEventDto, @CurrentUser() user: User) {
+    return await this.eventsService.createEvent(input, user);
   }
 
   @Patch(':id')

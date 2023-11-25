@@ -1,6 +1,6 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn, JoinColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn, JoinColumn, OneToMany } from "typeorm";
 import { Profile } from "./profile.entity";
-
+import {Event} from "../events/event.entity";
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -24,4 +24,7 @@ export class User {
   @OneToOne(() => Profile)
   @JoinColumn()
   profile: Profile;
+
+  @OneToMany(() =>  Event, (event) => event.organizer)
+  organized: Event[]
 }
