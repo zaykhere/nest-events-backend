@@ -1,10 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, Param, ParseIntPipe, Patch, Post, UseGuards, Query, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Logger, NotFoundException, ForbiddenException, Param, ParseIntPipe, Patch, Post, UseGuards, Query, UsePipes, ValidationPipe } from "@nestjs/common";
 import { CreateEventDto } from './input/create-event-dto';
-import { Event } from './event.entity';
 import { UpdateEventDto } from "./input/update-event-dto";
-import { Like, MoreThan, Repository } from "typeorm";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Attendee } from "./attendee.entity";
 import { EventService } from "./events.service";
 import { ListEvents } from "./input/list.events";
 import { CurrentUser } from "src/auth/current-user.decorator";
@@ -14,10 +10,6 @@ import { AuthGuardJwt } from "src/auth/auth-guard.jwt";
 @Controller('/events')
 export class EventsController {
   constructor(
-    @InjectRepository(Event)
-    private readonly repository: Repository<Event>,
-    @InjectRepository(Attendee)
-    private readonly attendeeRepository: Repository<Attendee>,
     private readonly eventsService: EventService
   ) {}
 
@@ -33,44 +25,6 @@ export class EventsController {
       limit: 2
     });
     return events;
-  }
-
-  @Get('/practice')
-  async practice() {
-    const event = await this.repository.find({
-      where: [
-        {
-          id: MoreThan(2),
-        },
-        {
-          description: Like('%meet%')
-        }
-      ],
-      take: 2
-    })
-    return event;
-  }
-
-  @Get('/practice2')
-  async practice2() {
-    // const event = await this.repository.findOne({
-    //   where: {
-    //     id: 1
-    //   },
-    //   relations: ['attendees']
-    // })
-    // return event;
-
-    const event = new Event();
-    event.id = 1;
-
-    const attendee = new Attendee();
-    attendee.name = "Jerry The Second";
-    attendee.event = event;
-
-    await this.attendeeRepository.save(attendee);
-
-    return event;
   }
 
   @Get(':id')
@@ -90,31 +44,36 @@ export class EventsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id, @Body() input: UpdateEventDto) {
-    const event = await this.repository.findOneBy({
-      id
-    });
+  @UseGuards(AuthGuardJwt)
+  async update(@Param('id') id, @Body() input: UpdateEventDto, @CurrentUser() user: User) {
+    const event = await this.eventsService.getEvent(id);
 
     if(!event) {
       throw new NotFoundException();
     }
 
-    return await this.repository.save({
-      ...event,
-      ...input,
-      when: input?.when ?
-        new Date(input.when) : event.when
-    })
+    if(event.organizerId !== user.id) {
+      throw new ForbiddenException("You are not authorized to edit this event");
+    }
+
+    return this.eventsService.updateEvent(event, UpdateEventDto);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuardJwt)
   @HttpCode(204)
-  async remove(@Param('id') id) {
-    const result = await this.eventsService.deleteEvent(id);
+  async remove(@Param('id') id, @CurrentUser() user: User) {
+    const event = await this.eventsService.getEvent(id);
 
-    if(result?.affected !== 1) {
+    if(!event) {
       throw new NotFoundException();
     }
+
+    if(event.organizerId !== user.id) {
+      throw new ForbiddenException("You are not authorized to delete this event");
+    }
+
+    return await this.eventsService.deleteEvent(id);
     
   }
 }
